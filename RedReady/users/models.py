@@ -1,0 +1,39 @@
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.db import models
+
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, role="volunteer"):
+        if not email:
+            raise ValueError("Users must have an email address")
+
+        email = self.normalize_email(email)
+        user = self.model(email=email, role=role)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password):
+        user = self.create_user(email, password, role="admin")
+        user.is_superuser = True
+        user.save(using=self._db)
+        return user
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    ROLE_CHOICES = (
+        ("admin", "Admin"),
+        ("logistics", "Logistics"),
+        ("volunteer", "Volunteer"),
+    )
+
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="volunteer")
+    is_active = models.BooleanField(default=True)
+
+    objects = UserManager()
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.email
