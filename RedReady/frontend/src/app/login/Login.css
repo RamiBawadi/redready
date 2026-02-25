@@ -1,0 +1,213 @@
+/* src/pages/Login.css */
+.login-page {
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Background image */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.03);
+  filter: blur(6px) grayscale(1);
+}
+
+/* Dark overlay on top of bg */
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* =========================
+   Top-left brand (FIXED)
+   Subtitle starts under logo
+   ========================= */
+.brand {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+
+  /* Make it a 2-column layout: logo | text */
+  display: grid;
+  grid-template-columns: 110px auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 2px;
+
+  align-items: center;
+}
+
+/* Keep JSX as-is, but make the row "disappear" so logo + name become grid items */
+.brand-row {
+  display: contents;
+}
+
+/* Logo in grid col 1 row 1 */
+.brand-logo {
+  grid-column: 1;
+  grid-row: 1;
+
+  width: 110px;
+  height: 110px;
+
+  display: block;
+  object-fit: contain;
+  margin: 0;
+}
+
+/* Name in grid col 2 row 1 */
+.brand-name {
+  grid-column: 2;
+  grid-row: 1;
+
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #ffffff;
+  line-height: 1;
+}
+
+/* Subtitle STARTS UNDER LOGO (col 1) and can extend across */
+.brand-subtitle {
+  grid-column: 1 / -1; /* starts under the logo column */
+  grid-row: 2;
+
+  margin: 0;
+  padding: 0;
+
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.2;
+
+  /* Prevent weird wrapping/stacking unless screen is too small */
+  max-width: 520px;
+  white-space: nowrap;
+}
+
+/* Center card */
+.login-center {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+/* Bigger, more dominant card */
+.login-card {
+  width: 560px;
+  max-width: 92vw;
+  min-height: 660px;
+  padding: 76px 64px 52px;
+  border-radius: 24px;
+  background: rgba(25, 25, 25, 0.92);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.65);
+}
+
+.login-title {
+  color: #ffffff;
+  font-size: 62px;
+  font-weight: 500;
+  margin: 6px 0 34px;
+  text-align: center;
+}
+
+/* Form */
+.login-form {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form-top {
+  flex: 1;
+}
+
+.login-form-bottom {
+  margin-top: 28px;
+}
+
+.form-group {
+  margin-top: 30px;
+}
+
+.label {
+  display: block;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 19px;
+  margin: 0 0 12px;
+}
+
+.input {
+  width: 100%;
+  height: 54px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  background: #0a0a0a;
+  color: #ffffff;
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.forgot {
+  margin-top: 18px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  user-select: none;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+/* Button */
+.login-btn {
+  margin-top: 56px;
+  width: 100%;
+  height: 66px;
+  border: none;
+  border-radius: 10px;
+  background: #ed1c24;
+  color: #ffffff;
+  font-size: 38px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  filter: brightness(1.05);
+}
+
+.login-btn:active {
+  transform: translateY(1px);
+}
+
+/* Footer text (BIGGER as requested) */
+.login-foot {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px; /* was 12px */
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Error */
+.error {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #ffb4b4;
+  text-align: center;
+}
