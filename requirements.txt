@@ -1,6 +1,29 @@
+First create an enviroment:
+
+python -m venv .venv
+
+Activate it:
+
+.venv\Scripts\activate
+
+(or on linux : source .venv/bin/activate)
+
+
+Pip install : 
+
 asgiref==3.11.1
 Django==6.0.2
+django-cors-headers==4.9.0
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+PyJWT==2.11.0
 sqlparse==0.5.5
 tzdata==2025.3
 
-pip freeze > requirements.txt
+
+Install Npm : 
+
+cd redready/frontend
+npm install
+
+Now you can start the servers from the 2 .bat files
