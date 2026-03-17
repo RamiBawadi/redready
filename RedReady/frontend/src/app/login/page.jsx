@@ -54,7 +54,7 @@ export default function LoginPage() {
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
 
-      router.push("/home");
+      router.push("/admin");
     } catch (err) {
       setError("Server connection failed.");
     }

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import "./Home.css";
+import "./Admin.css";
 let router;
 const DEFAULT_ITEMS = [
   { name: "Defibrillator (AED)", qty: 1, required: 1 },
@@ -39,7 +39,7 @@ function statusOf(amb) {
   return "ready";
 }
 
-export default function HomePage() {
+export default function AdminPage() {
   router = useRouter();
 
   useEffect(() => {
@@ -334,7 +334,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="home-page">
+    <div className="admin-page">
       <div className="navbar">
         <div className="nav-left">
           <img
@@ -346,19 +346,13 @@ export default function HomePage() {
         </div>
 
         <div className="nav-center">
-          <a className="nav-link active" href="#">
-            Home
-          </a>
-          <a className="nav-link" href="#">
-            About
-          </a>
-          <a className="nav-link" href="#">
-            Contact
+          <a className="nav-link active" href="/admin">
+            Admin
           </a>
         </div>
 
         <div className="nav-right">
-          <div className="role">Logistics Admin</div>
+          <div className="role">Admin</div>
 
           <button className="logout-btn" onClick={handleLogout} type="button">
             Logout
@@ -551,7 +545,7 @@ export default function HomePage() {
                 onClick={() => setActiveTab("history")}
                 type="button"
               >
-                History
+                Check History
               </button>
             </div>
 
