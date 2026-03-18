@@ -1,6 +1,6 @@
-/* src/pages/Home.css */
+/* src/pages/Admin.css */
 
-.home-page {
+.admin-page {
   min-height: 100vh;
   background: #14181f;
   font-family:
@@ -53,9 +53,9 @@
 .nav-link {
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
-  padding: 8px 6px;
+  font-weight: 700;
+  font-size: 18px;
+  padding: 8px 10px;
   border-bottom: 2px solid transparent;
 }
 
@@ -550,7 +550,7 @@
   padding: 10px 2px;
 }
 
-/* src/pages/Home.css */
+/* src/pages/Admin.css */
 /* Add/replace only these NEW styles (rest of your CSS stays the same). */
 
 /* ===== Info Tab table layout updated ===== */
