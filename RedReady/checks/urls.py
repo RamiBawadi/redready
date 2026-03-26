@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+from .views import create_check, get_checks
 
 urlpatterns = [
-    path('test/', views.test_api),
+    path("", create_check),
+    path("<int:ambulance_id>", get_checks),
 ]

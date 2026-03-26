@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import "./Volunteer.css";
 
 const SHARED_ITEMS = [
@@ -12,53 +12,6 @@ const SHARED_ITEMS = [
 ];
 
 const CURRENT_VOLUNTEER = "Volunteer";
-
-const AMBULANCE_CARDS = [
-  {
-    id: 1,
-    title: "Ambulance 1",
-    status: "Unchecked",
-    lastChecked: "Not checked yet",
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 2,
-    title: "Ambulance 2",
-    status: "Unchecked",
-    lastChecked: "Not checked yet",
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 3,
-    title: "Ambulance 3",
-    status: "Unchecked",
-    lastChecked: "Not checked yet",
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 4,
-    title: "Ambulance 4",
-    status: "Ready",
-    lastChecked: "Today at 09:10",
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 5,
-    title: "Ambulance 5",
-    status: "Partial",
-    lastChecked: "Today at 08:25",
-    issueCount: 2,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 6,
-    title: "Ambulance 6",
-    status: "Critical",
-    lastChecked: "Yesterday at 22:40",
-    issueCount: 4,
-    items: SHARED_ITEMS,
-  },
-];
 
 const STATUS_META = {
   Ready: {
@@ -83,13 +36,65 @@ const STATUS_META = {
   },
 };
 
+function getShift() {
+  const now = new Date();
+  const hour = now.getHours();
+
+  if (hour >= 5 && hour < 17) return "Day";
+  return "Night";
+}
+
+function getDayName() {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+}
+
 export default function VolunteerPage() {
+  const [ambulances, setAmbulances] = useState([]);
+  const shift = getShift();
+  const dayName = getDayName();
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+
+    fetch("http://127.0.0.1:8000/api/ambulances/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("API:", data);
+        setAmbulances(data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  const ambulanceCards = useMemo(() => {
+    return ambulances.map((a) => ({
+      id: a.id,
+      title: `Ambulance ${a.code}`,
+      status: capitalize(a.status),
+      lastChecked: a.last_checked || "Not checked yet",
+      items: (a.templates || []).map((t) => ({
+        id: t.item,
+        name: t.item_name || "Item",
+        requiredQty: t.required_quantity || 1,
+      })),
+    }));
+  }, [ambulances]);
+
   const [activeModalId, setActiveModalId] = useState(null);
   const [itemStateByAmbulance, setItemStateByAmbulance] = useState({});
 
   const activeAmbulance = useMemo(
-    () => AMBULANCE_CARDS.find((ambulance) => ambulance.id === activeModalId),
-    [activeModalId],
+    () => ambulanceCards.find((ambulance) => ambulance.id === activeModalId),
+    [activeModalId, ambulanceCards],
   );
 
   const checkedCount = activeAmbulance
@@ -122,7 +127,7 @@ export default function VolunteerPage() {
   }
 
   function openModal(ambulanceId) {
-    const ambulance = AMBULANCE_CARDS.find((entry) => entry.id === ambulanceId);
+    const ambulance = ambulanceCards.find((entry) => entry.id === ambulanceId);
     setActiveModalId(ambulanceId);
     setItemStateByAmbulance((prev) => {
       if (!ambulance || prev[ambulanceId]) {
@@ -238,6 +243,42 @@ export default function VolunteerPage() {
     });
   }
 
+  function handleCompleteCheck() {
+    if (!activeAmbulance) return;
+
+    const token = localStorage.getItem("access");
+
+    const items = activeAmbulance.items.map((item) => {
+      const state = itemStateByAmbulance[activeAmbulance.id]?.[item.id] || {};
+
+      return {
+        item: item.id, // ⚠️ IMPORTANT (we’ll fix below if needed)
+        available_quantity: state.quantity || 0,
+        is_flagged: !!state.savedNote,
+        note: state.savedNote?.text || "",
+      };
+    });
+
+    fetch("http://127.0.0.1:8000/api/checks/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ambulance: activeAmbulance.id,
+        items,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Saved:", data);
+        alert("Check saved successfully ✅");
+        closeModal();
+      })
+      .catch((err) => console.error(err));
+  }
+
   function deleteFlagNote(ambulanceId, itemId) {
     setItemStateByAmbulance((prev) => {
       const currentAmbulance = prev[ambulanceId] || {};
@@ -271,7 +312,10 @@ export default function VolunteerPage() {
         </div>
 
         <div className="volunteer-header__center">
-          <span className="volunteer-header__tab">Volunteer</span>
+          <div className="volunteer-header__tab">Volunteer</div>
+          <div className="volunteer-header__shift">
+            {shift} Shift • {dayName}
+          </div>
         </div>
 
         <div className="volunteer-header__right">
@@ -292,7 +336,7 @@ export default function VolunteerPage() {
         </div>
 
         <section className="ambulance-grid" aria-label="Volunteer ambulances">
-          {AMBULANCE_CARDS.map((ambulance) => {
+          {ambulanceCards.map((ambulance) => {
             const meta = STATUS_META[ambulance.status];
 
             return (
@@ -311,7 +355,9 @@ export default function VolunteerPage() {
                 <div className="ambulance-card__body">
                   <div className="ambulance-card__top">
                     <div>
-                      <h2 className="ambulance-card__title">{ambulance.title}</h2>
+                      <h2 className="ambulance-card__title">
+                        {ambulance.title}
+                      </h2>
                       <p className="ambulance-card__last-check">
                         Last time checked: {ambulance.lastChecked}
                       </p>
@@ -352,16 +398,15 @@ export default function VolunteerPage() {
       </main>
 
       {activeAmbulance ? (
-        <div
-          className="volunteer-modal-backdrop"
-          onClick={closeModal}
-        >
+        <div className="volunteer-modal-backdrop" onClick={closeModal}>
           <div
             className="volunteer-modal"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="volunteer-modal__header">
-              <h3 className="volunteer-modal__title">{activeAmbulance.title}</h3>
+              <h3 className="volunteer-modal__title">
+                {activeAmbulance.title}
+              </h3>
               <button
                 type="button"
                 className="volunteer-modal__close"
@@ -393,7 +438,9 @@ export default function VolunteerPage() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={() => toggleItem(activeAmbulance.id, item.id)}
+                          onChange={() =>
+                            toggleItem(activeAmbulance.id, item.id)
+                          }
                         />
                         <span className="volunteer-modal__checkmark">✓</span>
 
@@ -453,7 +500,9 @@ export default function VolunteerPage() {
                         <button
                           type="button"
                           className={`volunteer-modal__flag-button ${itemState?.savedNote ? "has-note" : ""}`}
-                          onClick={() => toggleFlag(activeAmbulance.id, item.id)}
+                          onClick={() =>
+                            toggleFlag(activeAmbulance.id, item.id)
+                          }
                         >
                           Flag
                         </button>
@@ -514,9 +563,11 @@ export default function VolunteerPage() {
                 <button
                   type="button"
                   className="volunteer-modal__button volunteer-modal__button--primary"
+                  onClick={handleCompleteCheck}
                 >
                   Complete Check
                 </button>
+
                 <button
                   type="button"
                   className="volunteer-modal__button volunteer-modal__button--secondary"

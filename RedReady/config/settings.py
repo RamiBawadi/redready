@@ -41,10 +41,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
 
-    'ambulances',
-    'items',
-    'checks',
-    'users',
+    "users",
+    "items",
+    "ambulances",
+    "checks",
 ]
 
 REST_FRAMEWORK = {

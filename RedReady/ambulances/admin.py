@@ -1,5 +1,5 @@
 from django.contrib import admin
+from .models import Ambulance, AmbulanceItemTemplate
 
-# Register your models here.
-from .models import Ambulance
 admin.site.register(Ambulance)
+admin.site.register(AmbulanceItemTemplate)

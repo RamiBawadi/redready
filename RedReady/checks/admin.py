@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import AmbulanceCheck, CheckItem
 
-# Register your models here.
+admin.site.register(AmbulanceCheck)
+admin.site.register(CheckItem)

@@ -5,16 +5,17 @@ from rest_framework.response import Response
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
+    base_role = request.user.role
+
+    if base_role == "admin":
+        roles = ["admin", "logistics", "volunteer"]
+    elif base_role == "logistics":
+        roles = ["logistics", "volunteer"]
+    else:
+        roles = ["volunteer"]
+
     return Response({
         "email": request.user.email,
-        "role": request.user.role
+        "roles": ["admin", "logistics", "volunteer"]
     })
 
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def me(request):
-    return Response({
-        "email": request.user.email,
-        "role": request.user.role
-    })

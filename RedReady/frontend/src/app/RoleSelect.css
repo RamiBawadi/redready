@@ -1,0 +1,42 @@
+.role-page {
+  min-height: 100vh;
+  background: #14181f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, sans-serif;
+}
+
+.role-container {
+  background: #1b1f27;
+  border: 1px solid #2a2f3a;
+  padding: 40px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.role-container h1 {
+  color: white;
+  margin-bottom: 30px;
+}
+
+.role-grid {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.role-grid button {
+  background: #ed1c24;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.role-grid button:hover {
+  background: #c5141b;
+}

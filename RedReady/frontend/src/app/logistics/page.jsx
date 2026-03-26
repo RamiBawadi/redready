@@ -96,12 +96,9 @@ export default function LogisticsPage() {
   const [role, setRole] = useState(null);
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("role");
-    const loggedIn = localStorage.getItem("loggedIn");
+    const token = localStorage.getItem("access");
 
-    setRole(storedRole);
-
-    if (!loggedIn || storedRole !== "Logistics") {
+    if (!token) {
       router.push("/login");
     }
   }, [router]);
@@ -146,7 +143,8 @@ export default function LogisticsPage() {
       prev.map((a) => {
         if (a.id !== id) return a;
         const nextIssue = (a.issueCount || 0) + 1;
-        const nextStatus = nextIssue === 0 ? "Ready" : nextIssue <= 2 ? "Partial" : "Critical";
+        const nextStatus =
+          nextIssue === 0 ? "Ready" : nextIssue <= 2 ? "Partial" : "Critical";
         return {
           ...a,
           issueCount: nextIssue,
@@ -222,7 +220,9 @@ export default function LogisticsPage() {
                 <div className="ambulance-card__body">
                   <div className="ambulance-card__top">
                     <div>
-                      <h3 className="ambulance-card__title">{ambulance.title}</h3>
+                      <h3 className="ambulance-card__title">
+                        {ambulance.title}
+                      </h3>
                       <p className="ambulance-card__last-check">
                         {formatLastChecked(ambulance.lastChecked)}
                       </p>
