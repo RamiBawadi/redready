@@ -16,6 +16,8 @@ def me(request):
 
     return Response({
         "email": request.user.email,
-        "roles": ["admin", "logistics", "volunteer"]
+        "first_name": request.user.first_name,
+        "last_name": request.user.last_name,
+        "roles": roles
     })
 

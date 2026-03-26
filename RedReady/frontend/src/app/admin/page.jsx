@@ -39,7 +39,16 @@ function statusOf(amb) {
   return "ready";
 }
 
-export default function AdminPage() {
+import AuthGuard from "@/components/AuthGuard";
+export default function AdminPageWrapper() {
+  return (
+    <AuthGuard>
+      <AdminPage />
+    </AuthGuard>
+  );
+}
+
+function AdminPage() {
   router = useRouter();
 
   useEffect(() => {

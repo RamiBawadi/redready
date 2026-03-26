@@ -10,6 +10,7 @@ from .utils import get_shift
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+
 def create_check(request):
     ambulance_id = request.data.get("ambulance")
     shift = get_shift()

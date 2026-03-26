@@ -1,14 +1,18 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from django.utils import timezone
 
+from datetime import datetime, timedelta
 
 def get_shift():
-    now = timezone.localtime().time()
+    now = datetime.now() 
 
-
-    if time(5, 0) <= now < time(17, 0):
-        return "day"
-    return "night"
+    if 5 <= now.hour < 17:
+        return "day", now.date()
+    else:
+        # night shift
+        if now.hour < 5:
+            return "night", (now - timedelta(days=1)).date()
+        return "night", now.date()
 
 
 def calculate_status(check):
@@ -32,7 +36,7 @@ def calculate_status(check):
             has_missing = True
 
     if not all_checked:
-        return "unchecked"
+        return "partial"
 
     if has_flag:
         return "critical"

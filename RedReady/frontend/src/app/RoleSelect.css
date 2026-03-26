@@ -40,3 +40,38 @@
 .role-grid button:hover {
   background: #c5141b;
 }
+
+@media (max-width: 768px) {
+  .role-page {
+    padding: 16px;
+  }
+
+  .role-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 24px 16px;
+    border-radius: 14px;
+  }
+
+  .role-container h1 {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .role-grid {
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .role-grid button {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+
+  button {
+    min-height: 48px;
+  }
+}

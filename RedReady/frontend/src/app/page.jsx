@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./RoleSelect.css";
 
-export default function Home() {
+import AuthGuard from "@/components/AuthGuard";
+export default function HomeWrapper() {
+  return (
+    <AuthGuard>
+      <Home />
+    </AuthGuard>
+  );
+}
+
+function Home() {
   const router = useRouter();
   const [roles, setRoles] = useState(null);
 

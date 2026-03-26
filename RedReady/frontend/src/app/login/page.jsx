@@ -53,6 +53,7 @@ export default function LoginPage() {
       // Save JWT tokens
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
+      localStorage.setItem("user_email", data.email);
 
       router.push("/");
     } catch (err) {
@@ -110,9 +111,7 @@ export default function LoginPage() {
 
               <div
                 className="forgot"
-                onClick={() =>
-                  setError("Forgot Password is not implemented yet.")
-                }
+                onClick={() => setError("Please contact an Admin!")}
               >
                 Forgot Password?
               </div>

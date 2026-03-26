@@ -91,7 +91,16 @@ function formatLastChecked(text) {
   return text;
 }
 
-export default function LogisticsPage() {
+import AuthGuard from "@/components/AuthGuard";
+export default function LogisticsPageWrapper() {
+  return (
+    <AuthGuard>
+      <LogisticsPage />
+    </AuthGuard>
+  );
+}
+
+function LogisticsPage() {
   const router = useRouter();
   const [role, setRole] = useState(null);
 

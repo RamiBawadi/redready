@@ -6,19 +6,38 @@ from .models import User
 class CustomUserAdmin(UserAdmin):
     model = User
 
-    list_display = ("email", "role", "is_staff", "is_superuser")
+    # Show in list view
+    list_display = ("email", "first_name", "last_name", "role", "is_staff", "is_superuser")
     ordering = ("email",)
 
+    # Fields when editing user
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Permissions", {"fields": ("role", "is_staff", "is_superuser")}),
-    )
 
-    add_fieldsets = (
-        (None, {
-            "classes": ("wide",),
-            "fields": ("email", "password1", "password2", "role", "is_staff", "is_superuser"),
+        ("Personal Info", {
+            "fields": ("first_name", "last_name")
+        }),
+
+        ("Permissions", {
+            "fields": ("role", "is_staff", "is_superuser")
         }),
     )
 
-    search_fields = ("email",)
+    # Fields when creating user
+    add_fieldsets = (
+        (None, {
+            "classes": ("wide",),
+            "fields": (
+                "email",
+                "first_name",
+                "last_name",
+                "password1",
+                "password2",
+                "role",
+                "is_staff",
+                "is_superuser",
+            ),
+        }),
+    )
+
+    search_fields = ("email", "first_name", "last_name")
