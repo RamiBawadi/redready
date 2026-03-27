@@ -1,4 +1,6 @@
 from django.urls import path
-from . import views
+from .views import get_items
 
-urlpatterns = []
+urlpatterns = [
+    path("items/", get_items),
+]

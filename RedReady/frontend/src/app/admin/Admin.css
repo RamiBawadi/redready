@@ -684,10 +684,24 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+}
+.add-item-dark select {
+  flex: 1;
+  min-width: 160px;
+}
+
+.add-item-dark select {
+  height: 40px;
+  border-radius: 12px;
   border: 1px solid #2a2f3a;
-  border-radius: 14px;
-  padding: 12px;
-  background: #14181f;
+  background: #1b1f27;
+  color: white;
+  padding: 0 10px;
+}
+
+.add-item-dark-btn {
+  flex-shrink: 0;
 }
 
 .add-item-dark-input {
@@ -991,4 +1005,31 @@
 .fleet-card.critical .fleet-car {
   animation: drive-border-outside 36s linear infinite;
   opacity: 0.85;
+}
+
+.error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(198, 59, 47, 0.15);
+  border: 1px solid rgba(198, 59, 47, 0.4);
+  color: #ff6b6b;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+@media (max-width: 600px) {
+  .add-item-dark {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-item-dark select,
+  .add-item-dark-input,
+  .add-item-dark-btn {
+    width: 100%;
+  }
+
+  .add-item-dark-input.small {
+    max-width: 100%;
+  }
 }

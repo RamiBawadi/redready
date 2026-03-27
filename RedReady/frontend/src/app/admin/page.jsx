@@ -1,42 +1,23 @@
 "use client";
-"use client";
+
+// TODO
+// fix change qty
+// fix remove item
+// add item by search from the drop down
+// create new item button
+// create check sections (all pages)
+// see check when clicking on check history
+//make header mobile responsive
+//fix status in admin
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import "./Admin.css";
 let router;
-const DEFAULT_ITEMS = [
-  { name: "Defibrillator (AED)", qty: 1, required: 1 },
-  { name: "First Aid Kit", qty: 1, required: 1 },
-  { name: "Oxygen Cylinder", qty: 2, required: 2 },
-  { name: "Spare Gloves", qty: 15, required: 20 },
-  { name: "Stretcher", qty: 1, required: 1 },
-];
+const role = "Admin"; // Temp
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function makeAmbulance(id) {
-  return {
-    id,
-    name: `RESCUE-${id}`,
-    code: `EMS-${2400 + id}`,
-    lastChecked: "",
-    history: [],
-    items: DEFAULT_ITEMS.map((x) => ({ ...x })),
-  };
-}
-
-function handleLogout() {
-  localStorage.removeItem("access");
-  localStorage.removeItem("refresh");
-  router.push("/login");
-}
-
-function statusOf(amb) {
-  if (!amb.lastChecked) return "unchecked";
-  return "ready";
 }
 
 import AuthGuard from "@/components/AuthGuard";
@@ -47,9 +28,74 @@ export default function AdminPageWrapper() {
     </AuthGuard>
   );
 }
+function handleLogout() {
+  localStorage.removeItem("access");
+  localStorage.removeItem("refresh");
+  router.push("/login");
+}
+
+function statusOf(a) {
+  return a.status || "unchecked";
+}
+function formatTime(timeStr) {
+  if (!timeStr) return "";
+  return timeStr.slice(0, 5); // HH:MM
+}
 
 function AdminPage() {
   router = useRouter();
+
+  const [ambulances, setAmbulances] = useState([]);
+  const [itemsList, setItemsList] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAmbulanceId, setSelectedAmbulanceId] = useState(null);
+
+  const [activeTab, setActiveTab] = useState("info"); // "history" | "info"
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayISO());
+
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemRequired, setNewItemRequired] = useState("1");
+
+  const [editingRequiredItem, setEditingRequiredItem] = useState(null);
+  const [requiredDraft, setRequiredDraft] = useState("");
+
+  const [toasts, setToasts] = useState([]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const [showAddAmbForm, setShowAddAmbForm] = useState(false);
+  const [newAmbName, setNewAmbName] = useState("");
+  const [newAmbCode, setNewAmbCode] = useState("");
+
+  const [history, setHistory] = useState([]);
+
+  const selected = ambulances.find((a) => a.id === selectedAmbulanceId);
+
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+
+    fetch("http://127.0.0.1:8000/api/ambulances/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setAmbulances(data));
+  }, []);
+
+  const itemsSorted = useMemo(() => {
+    if (!selected) return [];
+
+    return (selected.templates || []).map((t) => ({
+      id: t.id,
+      name: t.item_name,
+      required: t.required_quantity,
+    }));
+  }, [selected]);
 
   useEffect(() => {
     const token = localStorage.getItem("access");
@@ -75,57 +121,6 @@ function AdminPage() {
       });
   }, []);
 
-  // ✅ role switch; later pull from auth
-  const role = "Admin"; //
-
-  const [ambulances, setAmbulances] = useState(() => {
-    try {
-      const raw = localStorage.getItem("ambulances");
-      if (raw) return JSON.parse(raw);
-    } catch (err) {}
-
-    const t = todayISO();
-    return Array.from({ length: 6 }, (_, i) => {
-      const a = makeAmbulance(i + 1);
-
-      if (i === 0) {
-        a.lastChecked = "Last checked today";
-        a.history = [
-          { date: t, shift: "Day", by: "Ahmad", time: "09:15" },
-          { date: t, shift: "Night", by: "Maya", time: "20:40" },
-          { date: "2026-02-09", shift: "Night", by: "Karim", time: "21:05" },
-        ];
-      }
-
-      if (i === 1) {
-        a.lastChecked = "Last checked today";
-        a.history = [{ date: t, shift: "Day", by: "Rana", time: "10:05" }];
-      }
-
-      return a;
-    });
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("ambulances", JSON.stringify(ambulances));
-    } catch (err) {}
-  }, [ambulances]);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAmbulanceId, setSelectedAmbulanceId] = useState(null);
-
-  const [activeTab, setActiveTab] = useState("info"); // "history" | "info"
-  const [selectedHistoryDate, setSelectedHistoryDate] = useState(todayISO());
-
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemRequired, setNewItemRequired] = useState("1");
-
-  const [editingRequiredItem, setEditingRequiredItem] = useState(null);
-  const [requiredDraft, setRequiredDraft] = useState("");
-
-  const [toasts, setToasts] = useState([]);
-
   function pushToast(message, type = "success", ttl = 3500) {
     const id = Date.now() + Math.random();
     setToasts((t) => [...t, { id, message, type }]);
@@ -134,27 +129,11 @@ function AdminPage() {
     }, ttl);
   }
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  const [showAddAmbForm, setShowAddAmbForm] = useState(false);
-  const [newAmbName, setNewAmbName] = useState("");
-  const [newAmbCode, setNewAmbCode] = useState("");
-
-  const selected = ambulances.find((a) => a.id === selectedAmbulanceId);
-
   function openModal(id) {
-    const amb = ambulances.find((a) => a.id === id);
     setSelectedAmbulanceId(id);
-
     setActiveTab("info");
 
-    const t = todayISO();
-    const dates = Array.from(
-      new Set((amb?.history || []).map((h) => h.date)),
-    ).sort((a, b) => (a < b ? 1 : -1));
-    if (dates.includes(t)) setSelectedHistoryDate(t);
-    else setSelectedHistoryDate(dates[0] || t);
+    setSelectedHistoryDate(todayISO());
 
     setNewItemName("");
     setNewItemRequired("1");
@@ -191,39 +170,65 @@ function AdminPage() {
 
   const kpis = useMemo(() => {
     const totalFleet = ambulances.length;
-    const checked = ambulances.filter((a) => !!a.lastChecked);
-    const readyCount = checked.length;
+
+    const readyCount = ambulances.filter((a) => a.status === "ready").length;
 
     const fleetReadyPct =
       totalFleet === 0 ? 0 : Math.round((readyCount / totalFleet) * 100);
 
-    const t = todayISO();
-    const checksToday = ambulances.reduce(
-      (acc, a) => acc + a.history.filter((h) => h.date === t).length,
-      0,
-    );
-
-    const openIssues = 0;
-    return { totalFleet, fleetReadyPct, checksToday, openIssues };
+    return {
+      totalFleet,
+      fleetReadyPct,
+      checksToday: 0,
+      openIssues: ambulances.reduce(
+        (sum, a) => sum + (a.missing_count || 0),
+        0,
+      ),
+    };
   }, [ambulances]);
 
-  const historyDates = useMemo(() => {
-    if (!selected) return [];
-    return Array.from(new Set(selected.history.map((h) => h.date))).sort(
-      (a, b) => (a < b ? 1 : -1),
-    );
+  useEffect(() => {
+    if (!selected) return;
+
+    const token = localStorage.getItem("access");
+
+    fetch(`http://127.0.0.1:8000/api/checks/${selected.id}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setHistory(data))
+      .catch((err) => console.error(err));
   }, [selected]);
 
-  const historyForSelectedDate = useMemo(() => {
-    if (!selected) return { Day: [], Night: [] };
-    const day = selected.history.filter(
-      (h) => h.date === selectedHistoryDate && h.shift === "Day",
+  useEffect(() => {
+    const token = localStorage.getItem("access");
+
+    fetch("http://127.0.0.1:8000/api/items/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setItemsList(data));
+  }, []);
+
+  const historyDates = useMemo(() => {
+    return Array.from(new Set(history.map((h) => h.date))).sort((a, b) =>
+      a < b ? 1 : -1,
     );
-    const night = selected.history.filter(
-      (h) => h.date === selectedHistoryDate && h.shift === "Night",
+  }, [history]);
+
+  const historyForSelectedDate = useMemo(() => {
+    const day = history.filter(
+      (h) => h.date === selectedHistoryDate && h.shift === "day",
+    );
+    const night = history.filter(
+      (h) => h.date === selectedHistoryDate && h.shift === "night",
     );
     return { Day: day, Night: night };
-  }, [selected, selectedHistoryDate]);
+  }, [history, selectedHistoryDate]);
 
   function formatDateOption(d) {
     const t = todayISO();
@@ -231,110 +236,127 @@ function AdminPage() {
     return d;
   }
 
-  const itemsSorted = useMemo(() => {
-    if (!selected) return [];
-    return [...selected.items].sort((a, b) => a.name.localeCompare(b.name));
-  }, [selected]);
-
   const filteredAmbulances = useMemo(() => {
     const q = (searchQuery || "").trim().toLowerCase();
     return ambulances.filter((a) => {
       const st = statusOf(a);
       if (statusFilter !== "all" && st !== statusFilter) return false;
       if (!q) return true;
-      return (
-        a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q)
-      );
+      return (a.code || "").toLowerCase().includes(q);
     });
   }, [ambulances, searchQuery, statusFilter]);
 
-  function addAmbulance() {
-    if (role !== "Admin") return;
-    const name = newAmbName.trim();
-    const code = newAmbCode.trim();
+  async function addAmbulance() {
+    if (!newAmbCode.trim()) {
+      alert("Please enter ambulance code");
+      return;
+    }
 
-    setAmbulances((prev) => {
-      const nextId = prev.length ? Math.max(...prev.map((p) => p.id)) + 1 : 1;
+    const token = localStorage.getItem("access");
 
-      const newAmb =
-        name || code
-          ? {
-              id: nextId,
-              name: name || `RESCUE-${nextId}`,
-              code: code || `EMS-${2400 + nextId}`,
-              lastChecked: "",
-              history: [],
-              items: DEFAULT_ITEMS.map((x) => ({ ...x })),
-            }
-          : makeAmbulance(nextId);
-
-      return [...prev, newAmb];
+    const res = await fetch("http://127.0.0.1:8000/api/ambulances/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        code: newAmbCode.trim(),
+      }),
     });
 
-    setNewAmbName("");
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error || "Failed to add ambulance");
+      return;
+    }
+
+    setAmbulances((prev) => [
+      ...prev,
+      {
+        id: data.id,
+        code: data.code,
+        status: "unchecked",
+        missing_count: 0,
+        templates: [],
+      },
+    ]);
+
     setNewAmbCode("");
     setShowAddAmbForm(false);
   }
 
-  function removeItem(itemName) {
-    if (!selected) return;
-    setAmbulances((prev) =>
-      prev.map((a) => {
-        if (a.id !== selected.id) return a;
-        return { ...a, items: a.items.filter((it) => it.name !== itemName) };
-      }),
-    );
+  async function removeItem(templateId) {
+    const token = localStorage.getItem("access");
+
+    await fetch(`http://127.0.0.1:8000/api/templates/${templateId}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    window.location.reload();
   }
 
-  function addNewItem() {
-    if (!selected) return;
-    const name = newItemName.trim();
-    if (!name) return;
+  async function addNewItem() {
+    if (!selected || !newItemName) return;
 
-    const reqNum = Math.max(1, Number(newItemRequired) || 1);
-
-    const exists = selected.items.some(
-      (it) => it.name.toLowerCase() === name.toLowerCase(),
+    const alreadyExists = selected.templates.some(
+      (t) => t.item_name === newItemName,
     );
-    if (exists) return;
 
-    setAmbulances((prev) =>
-      prev.map((a) => {
-        if (a.id !== selected.id) return a;
-        return {
-          ...a,
-          items: [...a.items, { name, qty: 0, required: reqNum }],
-        };
+    if (alreadyExists) {
+      setError("Item already exists in this ambulance");
+      return;
+    }
+
+    const token = localStorage.getItem("access");
+
+    const res = await fetch("http://127.0.0.1:8000/api/templates/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ambulance: selected.id,
+        item_name: newItemName,
+        required_quantity: Number(newItemRequired),
       }),
-    );
+    });
 
-    setNewItemName("");
-    setNewItemRequired("1");
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || "Failed to add item");
+      return;
+    }
+
+    window.location.reload();
   }
 
-  function beginEditRequired(itemName, currentRequired) {
-    if (role !== "Admin") return;
-    setEditingRequiredItem(itemName);
+  function beginEditRequired(templateId, currentRequired) {
+    setEditingRequiredItem(templateId);
     setRequiredDraft(String(currentRequired));
   }
 
-  function commitEditRequired(itemName) {
-    if (!selected || role !== "Admin") return;
-    const next = Math.max(1, Number(requiredDraft) || 1);
+  async function commitEditRequired(templateId) {
+    const token = localStorage.getItem("access");
 
-    setAmbulances((prev) =>
-      prev.map((a) => {
-        if (a.id !== selected.id) return a;
-        const items = a.items.map((it) =>
-          it.name === itemName ? { ...it, required: next } : it,
-        );
-        return { ...a, items };
+    await fetch(`/api/templates/${templateId}/`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        required_quantity: Number(requiredDraft),
       }),
-    );
+    });
 
     setEditingRequiredItem(null);
-    setRequiredDraft("");
-    pushToast(`${itemName} required set to ${next}`, "success");
+    window.location.reload();
   }
 
   function cancelEditRequired() {
@@ -448,12 +470,6 @@ function AdminPage() {
             {showAddAmbForm && (
               <div className="add-ambulance-form">
                 <input
-                  className="add-ambulance-input"
-                  placeholder="Name (optional)"
-                  value={newAmbName}
-                  onChange={(e) => setNewAmbName(e.target.value)}
-                />
-                <input
                   className="add-ambulance-input small"
                   placeholder="Code (optional)"
                   value={newAmbCode}
@@ -474,7 +490,7 @@ function AdminPage() {
         <div className="fleet-controls">
           <input
             className="fleet-search"
-            placeholder="Search by name or code..."
+            placeholder="Search by code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -508,15 +524,11 @@ function AdminPage() {
                   <div className="fleet-left">
                     <div className={`fleet-dot ${st}`} />
                     <div className="fleet-text">
-                      <div className="fleet-name">{a.name}</div>
                       <div className="fleet-code">{a.code}</div>
                     </div>
                   </div>
 
-                  <div className={`fleet-pill ${st}`}>
-                    {st === "ready" && "✓ Ready"}
-                    {st === "unchecked" && "◷ Not Checked"}
-                  </div>
+                  <div className={`fleet-pill ${st}`}>{"✓ Active"}</div>
                 </button>
               );
             })
@@ -528,9 +540,7 @@ function AdminPage() {
         <div className="modal-backdrop" onClick={closeModal}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">
-                {selected.name} ({selected.code})
-              </div>
+              <div className="modal-title">{selected.code}</div>
               <button
                 className="modal-close"
                 onClick={closeModal}
@@ -564,21 +574,18 @@ function AdminPage() {
                   <div className="info-table">
                     <div className="info-row info-row-head">
                       <div className="info-col-name">Item</div>
-                      <div className="info-col-qty">Quantity</div>
                       <div className="info-col-actions">Required</div>
                       <div className="info-col-remove"></div>
                     </div>
 
                     {itemsSorted.map((it) => {
-                      const isEditing = editingRequiredItem === it.name;
+                      const isEditing = editingRequiredItem === it.id;
 
                       return (
-                        <div className="info-row" key={it.name}>
+                        <div className="info-row" key={it.id}>
                           <div className="info-col-name">{it.name}</div>
 
-                          <div className="info-col-qty">
-                            {it.qty} / {it.required}
-                          </div>
+                          <div className="info-col-qty">{it.required}</div>
 
                           <div className="info-col-actions">
                             {role !== "Admin" ? (
@@ -600,7 +607,7 @@ function AdminPage() {
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter")
-                                      commitEditRequired(it.name);
+                                      commitEditRequired(it.id);
                                     if (e.key === "Escape")
                                       cancelEditRequired();
                                   }}
@@ -609,7 +616,7 @@ function AdminPage() {
                                 <button
                                   className="edit-confirm"
                                   type="button"
-                                  onClick={() => commitEditRequired(it.name)}
+                                  onClick={() => commitEditRequired(it.id)}
                                   disabled={
                                     !requiredDraft || Number(requiredDraft) < 1
                                   }
@@ -630,7 +637,7 @@ function AdminPage() {
                                 className="required-edit-btn"
                                 type="button"
                                 onClick={() =>
-                                  beginEditRequired(it.name, it.required)
+                                  beginEditRequired(it.id, it.required)
                                 }
                                 title="Click to edit required quantity"
                               >
@@ -642,7 +649,7 @@ function AdminPage() {
                           <div className="info-col-remove">
                             <button
                               className="remove-item-dark"
-                              onClick={() => removeItem(it.name)}
+                              onClick={() => removeItem(it.id)}
                               type="button"
                               title="Remove item"
                             >
@@ -655,12 +662,19 @@ function AdminPage() {
                   </div>
 
                   <div className="add-item-dark">
-                    <input
-                      className="add-item-dark-input"
-                      placeholder="New item name..."
+                    <select
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
-                    />
+                      className="input"
+                    >
+                      <option value="">Select item</option>
+
+                      {itemsList.map((item) => (
+                        <option key={item.id} value={item.name}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
 
                     <input
                       className="add-item-dark-input small"
@@ -683,6 +697,8 @@ function AdminPage() {
                       Add Item
                     </button>
                   </div>
+
+                  {error && <div className="error">{error}</div>}
                 </div>
               )}
 
@@ -706,9 +722,7 @@ function AdminPage() {
                         >{`Today (${todayISO()})`}</option>
                       ) : (
                         historyDates.map((d) => (
-                          <option key={d} value={d}>
-                            {formatDateOption(d)}
-                          </option>
+                          <option value={d}>{formatDateOption(d)}</option>
                         ))
                       )}
                     </select>
@@ -729,8 +743,12 @@ function AdminPage() {
                           ) : (
                             historyForSelectedDate.Day.map((h, idx) => (
                               <div className="history-row" key={`d-${idx}`}>
-                                <div className="history-by">{h.by}</div>
-                                <div className="history-time">{h.time}</div>
+                                <div className="history-by">
+                                  {h.user_full_name}
+                                </div>
+                                <div className="history-time">
+                                  {formatTime(h.time)}
+                                </div>
                               </div>
                             ))
                           )}
@@ -743,7 +761,9 @@ function AdminPage() {
                           ) : (
                             historyForSelectedDate.Night.map((h, idx) => (
                               <div className="history-row" key={`n-${idx}`}>
-                                <div className="history-by">{h.by}</div>
+                                <div className="history-by">
+                                  {h.user_full_name}
+                                </div>
                                 <div className="history-time">{h.time}</div>
                               </div>
                             ))
