@@ -13,7 +13,7 @@ from .utils import get_shift
 
 def create_check(request):
     ambulance_id = request.data.get("ambulance")
-    shift = get_shift()
+    shift, shift_date = get_shift()
     items_data = request.data.get("items", [])
 
     # create check
@@ -21,6 +21,7 @@ def create_check(request):
         ambulance_id=ambulance_id,
         user=request.user,
         shift=shift,
+        date=shift_date,
     )
 
     # create empty items first
