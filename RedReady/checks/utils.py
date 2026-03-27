@@ -18,9 +18,10 @@ def get_shift():
 def calculate_status(check):
     items = check.items.all()
     ambulance = check.ambulance
-    
+    missing_count = 0
+
     if not items.exists():
-        return "unchecked"
+        return "unchecked", missing_count
 
     has_flag = False
     has_missing = False
@@ -38,14 +39,15 @@ def calculate_status(check):
 
         if item.is_checked and item.available_quantity < required_qty:
             has_missing = True
+            missing_count += 1
 
     if not all_checked:
-        return "partial"
+        return "partial", missing_count
 
     if has_flag:
-        return "critical"
+        return "critical", missing_count
 
     if has_missing:
-        return "partial"
+        return "partial", missing_count
 
-    return "ready"
+    return "ready", missing_count

@@ -13,7 +13,8 @@ def get_ambulances(request):
     ambulances = Ambulance.objects.all()
     today = date.today()
     shift, shift_date = get_shift()
-
+    missing_count = 0
+    
     data = []
 
     for amb in ambulances:
@@ -47,7 +48,7 @@ def get_ambulances(request):
             }
 
 
-            status = calculate_status(last_check)
+            status, missing_count = calculate_status(last_check)
             last_checked = f"{last_check.date} {last_check.time}"
 
         else:
@@ -60,6 +61,7 @@ def get_ambulances(request):
             "status": status,
             "last_checked": last_checked,
             "last_check": last_check_data,
+            "missing_count": missing_count,
             "templates": [
                 {
                     "item": t.item.id,

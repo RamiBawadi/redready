@@ -4,93 +4,65 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./Logistics.css";
 
-const SHARED_ITEMS = [
-  { id: "aed", name: "Defibrillator (AED)", requiredQty: 1 },
-  { id: "first-aid", name: "First Aid Kit", requiredQty: 1 },
-  { id: "oxygen", name: "Oxygen Cylinder", requiredQty: 100 },
-  { id: "gloves", name: "Spare Gloves", requiredQty: 20 },
-  { id: "stretcher", name: "Stretcher", requiredQty: 1 },
-];
-
-const AMBULANCE_CARDS = [
-  {
-    id: 1,
-    title: "Ambulance 1",
-    status: "Unchecked",
-    lastChecked: "Not checked yet",
-    issueCount: 4,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 2,
-    title: "Ambulance 2",
-    status: "Unchecked",
-    lastChecked: "Not checked yet",
-    issueCount: 2,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 3,
-    title: "Ambulance 3",
-    status: "Partial",
-    lastChecked: "Today at 08:20",
-    issueCount: 1,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 4,
-    title: "Ambulance 4",
-    status: "Ready",
-    lastChecked: "Today at 09:10",
-    issueCount: 0,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 5,
-    title: "Ambulance 5",
-    status: "Critical",
-    lastChecked: "Yesterday at 22:40",
-    issueCount: 5,
-    items: SHARED_ITEMS,
-  },
-  {
-    id: 6,
-    title: "Ambulance 6",
-    status: "Partial",
-    lastChecked: "Yesterday at 18:30",
-    issueCount: 2,
-    items: SHARED_ITEMS,
-  },
-];
-
 const STATUS_META = {
-  Ready: {
-    className: "ready",
-    buttonLabel: "All good",
-    disabled: true,
-  },
-  Partial: {
-    className: "partial",
-    buttonLabel: "Resolve",
-    disabled: false,
-  },
+  Ready: { className: "ready", buttonLabel: "View Check", disabled: false },
+  Partial: { className: "partial", buttonLabel: "View Check", disabled: false },
   Critical: {
     className: "critical",
-    buttonLabel: "Resolve",
+    buttonLabel: "View Check",
     disabled: false,
   },
-  Unchecked: {
-    className: "unchecked",
-    buttonLabel: "Check",
-    disabled: false,
-  },
+  Unchecked: { className: "unchecked", buttonLabel: "", disabled: true },
 };
 
-function formatLastChecked(text) {
-  if (!text) return "Not checked yet";
-  return text;
+function handleLogout(e) {
+  e.preventDefault();
+  localStorage.clear();
+  window.location.href = "/login";
 }
 
+function getShift() {
+  const now = new Date();
+  const hour = now.getHours();
+
+  if (hour >= 5 && hour < 17) return "Day";
+  return "Night";
+}
+
+function getShiftDayName() {
+  const now = new Date();
+  const hour = now.getHours();
+
+  // If between midnight and 5 AM → go back one day
+  if (hour < 5) {
+    now.setDate(now.getDate() - 1);
+  }
+
+  return now.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+}
+
+function formatDateTime(dateTimeString) {
+  if (!dateTimeString) return "";
+
+  const [date, time] = dateTimeString.split(" ");
+
+  if (!time) return dateTimeString;
+
+  return `${date} ${time.slice(0, 5)}`; // keep HH:MM
+}
+
+function getDayFromDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { weekday: "long" });
+}
+
+function formatTime(timeString) {
+  if (!timeString) return "";
+
+  return timeString.slice(0, 5);
+}
 import AuthGuard from "@/components/AuthGuard";
 export default function LogisticsPageWrapper() {
   return (
@@ -101,117 +73,370 @@ export default function LogisticsPageWrapper() {
 }
 
 function LogisticsPage() {
-  const router = useRouter();
-  const [role, setRole] = useState(null);
+  const [ambulances, setAmbulances] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("access");
 
-    if (!token) {
-      router.push("/login");
-    }
-  }, [router]);
+    if (!token) return;
 
-  const [ambulances, setAmbulances] = useState(() => {
-    try {
-      const raw = localStorage.getItem("logisticsAmbulances");
-      if (raw) return JSON.parse(raw);
-    } catch (err) {}
-    return AMBULANCE_CARDS;
-  });
+    fetch("http://127.0.0.1:8000/api/me/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setUser(data));
+  }, []);
 
+  const fullName =
+    user?.first_name && user?.last_name
+      ? `${user.first_name} ${user.last_name}`
+      : "Unknown User";
+
+  const shift = getShift();
+  const dayName = getShiftDayName();
   useEffect(() => {
-    try {
-      localStorage.setItem("logisticsAmbulances", JSON.stringify(ambulances));
-    } catch (err) {}
+    const token = localStorage.getItem("access");
+
+    fetch("http://127.0.0.1:8000/api/ambulances/", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("API:", data);
+        setAmbulances(data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  function capitalize(str) {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  const ambulanceCards = useMemo(() => {
+    return ambulances.map((a) => ({
+      id: a.id,
+      title: `Ambulance ${a.code}`,
+      status: capitalize(a.status),
+      lastChecked: a.last_checked || "Not checked yet",
+      last_check: a.last_check,
+      missingCount: a.missing_count || 0,
+      items: a.last_check
+        ? a.last_check.items.map((t) => ({
+            id: t.item_id,
+            name: t.item,
+            requiredQty: t.required,
+            quantity: t.quantity,
+            is_flagged: t.flagged,
+            note: t.note,
+            is_checked: t.is_checked,
+          }))
+        : (a.templates || []).map((t) => ({
+            id: t.item,
+            name: t.item_name,
+            requiredQty: t.required_quantity,
+          })),
+    }));
   }, [ambulances]);
 
-  function handleLogout() {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("role");
-    localStorage.removeItem("email");
-    router.push("/login");
+  const [activeModalId, setActiveModalId] = useState(null);
+  const [itemStateByAmbulance, setItemStateByAmbulance] = useState({});
+
+  const activeAmbulance = useMemo(
+    () => ambulanceCards.find((ambulance) => ambulance.id === activeModalId),
+    [activeModalId, ambulanceCards],
+  );
+
+  const checkedCount = activeAmbulance
+    ? activeAmbulance.items.filter(
+        (item) => itemStateByAmbulance[activeAmbulance.id]?.[item.id]?.checked,
+      ).length
+    : 0;
+
+  const [isResolveMode, setIsResolveMode] = useState(false);
+
+  const isViewMode = !!activeAmbulance?.last_check && !isResolveMode;
+
+  function makeInitialItemState(ambulance) {
+    return ambulance.items.reduce((acc, item) => {
+      acc[item.id] = {
+        checked: false,
+        quantity: item.requiredQty,
+        isFlagOpen: false,
+        noteDraft: "",
+        savedNote: null,
+      };
+      return acc;
+    }, {});
   }
 
-  function markResolved(id) {
-    setAmbulances((prev) =>
-      prev.map((a) => {
-        if (a.id !== id) return a;
+  function formatSavedAt() {
+    return new Date().toLocaleString("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+  function openModal(ambulanceId) {
+    const ambulance = ambulanceCards.find((entry) => entry.id === ambulanceId);
+    setActiveModalId(ambulanceId);
+
+    setItemStateByAmbulance((prev) => {
+      if (!ambulance) return prev;
+
+      if (ambulance.last_check) {
+        const state = {};
+
+        ambulance.items.forEach((item) => {
+          state[item.id] = {
+            checked: item.is_checked,
+            quantity: item.quantity,
+            isFlagOpen: false,
+            noteDraft: item.note || "",
+            savedNote: item.note
+              ? {
+                  text: item.note,
+                  by: ambulance.last_check.user_full_name,
+                  at: `${ambulance.last_check.date} ${ambulance.last_check.time}`,
+                }
+              : null,
+          };
+        });
+
         return {
-          ...a,
-          status: "Ready",
-          issueCount: 0,
-          lastChecked: "Just now",
+          ...prev,
+          [ambulanceId]: state,
         };
-      }),
-    );
+      }
+
+      return {
+        ...prev,
+        [ambulanceId]: makeInitialItemState(ambulance),
+      };
+    });
   }
 
-  function addIssue(id) {
-    setAmbulances((prev) =>
-      prev.map((a) => {
-        if (a.id !== id) return a;
-        const nextIssue = (a.issueCount || 0) + 1;
-        const nextStatus =
-          nextIssue === 0 ? "Ready" : nextIssue <= 2 ? "Partial" : "Critical";
-        return {
-          ...a,
-          issueCount: nextIssue,
-          status: nextStatus,
-          lastChecked: "Just now",
-        };
-      }),
-    );
+  function closeModal() {
+    setActiveModalId(null);
   }
 
-  const totalMissing = useMemo(() => {
-    return ambulances.reduce((acc, a) => acc + (a.issueCount || 0), 0);
-  }, [ambulances]);
+  function toggleItem(ambulanceId, itemId, requiredQty = 0) {
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+
+      const currentItem = currentAmbulance[itemId] || {
+        checked: false,
+        quantity: 0,
+      };
+
+      const newChecked = !currentItem.checked;
+
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentItem,
+            checked: newChecked,
+            quantity: newChecked ? requiredQty : 0, // 🔥 KEY
+          },
+        },
+      };
+    });
+  }
+
+  function updateQuantity(ambulanceId, itemId, nextValue, maxValue) {
+    const parsedValue = Number(nextValue);
+    const safeValue = Number.isNaN(parsedValue)
+      ? 0
+      : Math.max(0, Math.min(maxValue, parsedValue));
+
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentAmbulance[itemId],
+            quantity: safeValue,
+          },
+        },
+      };
+    });
+  }
+
+  function toggleFlag(ambulanceId, itemId) {
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentAmbulance[itemId],
+            isFlagOpen: !currentAmbulance[itemId]?.isFlagOpen,
+          },
+        },
+      };
+    });
+  }
+
+  function updateNoteDraft(ambulanceId, itemId, value) {
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentAmbulance[itemId],
+            noteDraft: value,
+          },
+        },
+      };
+    });
+  }
+
+  function saveFlagNote(ambulanceId, itemId) {
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+      const currentItem = currentAmbulance[itemId];
+      const noteText = (currentItem?.noteDraft || "").trim();
+
+      if (!noteText) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentItem,
+            savedNote: {
+              text: noteText,
+              by: localStorage.getItem("user_email") || "You",
+              at: formatSavedAt(),
+            },
+            noteDraft: noteText,
+            isFlagOpen: false,
+          },
+        },
+      };
+    });
+  }
+
+  function handleCompleteCheck() {
+    if (!activeAmbulance) return;
+
+    const token = localStorage.getItem("access");
+
+    const items = activeAmbulance.items.map((item) => {
+      const state = itemStateByAmbulance[activeAmbulance.id]?.[item.id] || {};
+
+      return {
+        item: item.id,
+        available_quantity: state.checked ? state.quantity : 0,
+        is_flagged: !!state.savedNote,
+        note: state.savedNote?.text || "",
+        is_checked: state.checked || false, // ✅ THIS FIXES EVERYTHING
+      };
+    });
+
+    fetch("http://127.0.0.1:8000/api/checks/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ambulance: activeAmbulance.id,
+        items,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Saved:", data);
+        alert("Check saved successfully ✅");
+        closeModal();
+        window.location.reload();
+      })
+      .catch((err) => console.error(err));
+  }
+
+  function deleteFlagNote(ambulanceId, itemId) {
+    setItemStateByAmbulance((prev) => {
+      const currentAmbulance = prev[ambulanceId] || {};
+      const currentItem = currentAmbulance[itemId];
+
+      return {
+        ...prev,
+        [ambulanceId]: {
+          ...currentAmbulance,
+          [itemId]: {
+            ...currentItem,
+            savedNote: null,
+            noteDraft: "",
+            isFlagOpen: false,
+          },
+        },
+      };
+    });
+  }
 
   return (
-    <div className="logistics-page">
-      <header className="logistics-header">
-        <div className="logistics-header__left">
+    <div className="volunteer-page">
+      <header className="volunteer-header">
+        <div className="volunteer-header__left">
           <img
-            className="logistics-header__logo"
+            className="volunteer-header__logo"
             src="/assets/logo-white-cropped.png"
             alt="RedReady"
           />
-          <span className="logistics-header__brand-name">RedReady</span>
+          <span className="volunteer-header__brand-name">RedReady</span>
         </div>
 
-        <div className="logistics-header__center">
-          <span className="logistics-header__tab">Logistics</span>
+        <div className="volunteer-header__center">
+          <div className="volunteer-header__tab">{fullName}</div>
+          <div className="volunteer-header__shift">
+            {shift} Shift • {dayName}
+          </div>
         </div>
 
-        <div className="logistics-header__right">
-          <span className="logistics-header__role">{role || "Logistics"}</span>
-          <button
-            className="logistics-header__exit"
-            type="button"
-            onClick={handleLogout}
-          >
+        <div className="volunteer-header__right">
+          <span className="volunteer-header__role">Logistics</span>
+          <a className="volunteer-header__exit" href="#" onClick={handleLogout}>
             Logout
-          </button>
-          <div className="logistics-header__avatar" />
+          </a>
+          <div className="volunteer-header__avatar" />
         </div>
       </header>
 
-      <main className="logistics-content">
+      <main className="volunteer-content">
         <div className="fleet-status-head">
-          <h1 className="fleet-status-title">Missing Items</h1>
-          <p className="fleet-status-subtitle">
-            Track missing items across the fleet and resolve issues.
-          </p>
-          <p className="fleet-status-subtitle">
-            Total missing items: <strong>{totalMissing}</strong>
-          </p>
+          <h1 className="fleet-status-title">Fleet Status</h1>
+          <div className="logistics-tabs">
+            <div className="logistics-tab active">
+              Missing Items :{" "}
+              {ambulanceCards.reduce(
+                (sum, amb) => sum + (amb.missingCount || 0),
+                0,
+              )}
+            </div>
+          </div>
         </div>
 
-        <section className="ambulance-grid" aria-label="Logistics ambulances">
-          {ambulances.map((ambulance) => {
+        <section className="ambulance-grid" aria-label="Volunteer ambulances">
+          {ambulanceCards.map((ambulance) => {
             const meta = STATUS_META[ambulance.status];
-            const issues = ambulance.issueCount || 0;
 
             return (
               <article
@@ -222,49 +447,72 @@ function LogisticsPage() {
                   <img
                     className="ambulance-card__icon"
                     src="/assets/ambulance-icon.png"
-                    alt="Ambulance"
+                    alt=""
                   />
                 </div>
 
                 <div className="ambulance-card__body">
                   <div className="ambulance-card__top">
                     <div>
-                      <h3 className="ambulance-card__title">
+                      <h2 className="ambulance-card__title">
                         {ambulance.title}
-                      </h3>
+                      </h2>
                       <p className="ambulance-card__last-check">
-                        {formatLastChecked(ambulance.lastChecked)}
+                        {ambulance.last_check ? (
+                          <>
+                            Checked this shift at:{" "}
+                            {formatTime(ambulance.last_check.time)}
+                            <br />
+                            Missing items: {ambulance.missingCount}
+                          </>
+                        ) : (
+                          <>Not checked this shift</>
+                        )}
                       </p>
+
+                      {ambulance.status === "Partial" ||
+                      ambulance.status === "Critical" ? (
+                        <p
+                          className={`ambulance-card__issues ambulance-card__issues--${meta.className}`}
+                        >
+                          {ambulance.issueCount} issues found
+                        </p>
+                      ) : null}
                     </div>
-                    <div
+
+                    <span
                       className={`ambulance-card__badge ambulance-card__badge--${meta.className}`}
                     >
                       {ambulance.status}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`ambulance-card__issues ambulance-card__issues--${meta.className}`}
-                  >
-                    {issues} missing item{issues === 1 ? "" : "s"}
+                    </span>
                   </div>
 
                   <div className="ambulance-card__actions">
-                    <button
-                      className="ambulance-card__button"
-                      type="button"
-                      onClick={() => markResolved(ambulance.id)}
-                      disabled={meta.disabled}
-                    >
-                      {meta.buttonLabel}
-                    </button>
-                    <button
-                      className="ambulance-card__button ambulance-card__button--secondary"
-                      type="button"
-                      onClick={() => addIssue(ambulance.id)}
-                    >
-                      Add issue
-                    </button>
+                    {ambulance.last_check && (
+                      <>
+                        <button
+                          className={`ambulance-card__button ambulance-card__button--${meta.className}`}
+                          onClick={() => {
+                            setIsResolveMode(false);
+                            openModal(ambulance.id);
+                          }}
+                        >
+                          View Check
+                        </button>
+
+                        <button
+                          className="ambulance-card__button ambulance-card__button--resolve"
+                          onClick={() => {
+                            setIsResolveMode(true);
+                            openModal(ambulance.id);
+                          }}
+                        >
+                          Resolve
+                        </button>
+                      </>
+                    )}
+
+                    {!ambulance.last_check && null}
                   </div>
                 </div>
               </article>
@@ -272,6 +520,267 @@ function LogisticsPage() {
           })}
         </section>
       </main>
+
+      {activeAmbulance ? (
+        <div className="volunteer-modal-backdrop" onClick={closeModal}>
+          <div
+            className="volunteer-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="volunteer-modal__header">
+              <div className="volunteer-modal__header-left">
+                <div className="volunteer-modal__title">
+                  {activeAmbulance.title}
+                </div>
+
+                {isViewMode && activeAmbulance.last_check && (
+                  <div className="volunteer-modal__meta">
+                    <div>By : {activeAmbulance.last_check.user_full_name}</div>
+                    <div>
+                      At : {activeAmbulance.last_check.date} •{" "}
+                      {formatTime(activeAmbulance.last_check.time)}
+                    </div>
+                    <div>
+                      {activeAmbulance.last_check.shift === "night"
+                        ? "Night"
+                        : "Day"}{" "}
+                      Shift • {getDayFromDate(activeAmbulance.last_check.date)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="volunteer-modal__header-right">
+                <span
+                  className={`volunteer-modal__status-badge volunteer-modal__status-${activeAmbulance.status.toLowerCase()}`}
+                >
+                  {activeAmbulance.status}
+                </span>
+              </div>
+            </div>
+
+            <div className="volunteer-modal__body">
+              <div className="volunteer-modal__counter">
+                {checkedCount} / {activeAmbulance.items.length} items checked
+              </div>
+
+              <div className="volunteer-modal__list">
+                {activeAmbulance.items.map((item) => {
+                  const itemState = itemStateByAmbulance[activeAmbulance.id]?.[
+                    item.id
+                  ] || {
+                    checked: false,
+                    quantity: item.requiredQty,
+                    isFlagOpen: false,
+                    noteDraft: "",
+                    savedNote: null,
+                  };
+                  const checked = itemState?.checked || false;
+                  const hasQuantityControl = item.requiredQty > 1;
+                  const available = itemState?.checked ? itemState.quantity : 0;
+                  const isMissing = available < item.requiredQty;
+                  const hasFlag = !!itemState?.savedNote;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`volunteer-modal__item ${checked ? "is-checked" : ""} ${hasFlag ? "volunteer-modal__item-flagged" : isMissing ? "volunteer-modal__item-missing" : ""}`}
+                    >
+                      <label className="volunteer-modal__item-main">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={isViewMode}
+                          onChange={() =>
+                            toggleItem(
+                              activeAmbulance.id,
+                              item.id,
+                              item.requiredQty,
+                            )
+                          }
+                        />
+                        <span
+                          className={`volunteer-modal__checkmark ${hasFlag ? "volunteer-modal__checkmark-flagged" : isMissing ? "volunteer-modal__checkmark-missing" : "volunteer-modal__checkmark-green"}`}
+                        >
+                          ✓
+                        </span>
+
+                        <span className="volunteer-modal__item-text">
+                          <span className={`volunteer-modal__item-name `}>
+                            {item.name}
+                          </span>
+                          <div
+                            className={`volunteer-modal__item-qty  ${
+                              itemState?.checked && available < item.requiredQty
+                                ? "volunteer-modal__item-qty-missing"
+                                : ""
+                            }`}
+                          >
+                            {itemState?.checked ? (
+                              <>
+                                {available < item.requiredQty
+                                  ? "Missing Item - "
+                                  : ""}
+                                Available: {available} / Required:{" "}
+                                {item.requiredQty}
+                              </>
+                            ) : (
+                              <>
+                                <>Available: 0 / Required: {item.requiredQty}</>
+                              </>
+                            )}
+                          </div>
+                        </span>
+                      </label>
+
+                      {hasQuantityControl && itemState?.checked ? (
+                        <div className="volunteer-modal__quantity-block">
+                          <div className="volunteer-modal__quantity-label">
+                            Available quantity
+                          </div>
+
+                          <div className="volunteer-modal__quantity-controls">
+                            {itemState?.checked && (
+                              <input
+                                className="volunteer-modal__slider"
+                                type="range"
+                                min="0"
+                                max={item.requiredQty}
+                                value={itemState?.quantity ?? 0}
+                                disabled={isViewMode}
+                                onChange={(e) =>
+                                  updateQuantity(
+                                    activeAmbulance.id,
+                                    item.id,
+                                    e.target.value,
+                                    item.requiredQty,
+                                  )
+                                }
+                              />
+                            )}
+
+                            <input
+                              className="volunteer-modal__quantity-input"
+                              type="number"
+                              min="0"
+                              max={item.requiredQty}
+                              value={itemState?.quantity ?? item.requiredQty}
+                              disabled={isViewMode}
+                              onChange={(event) =>
+                                updateQuantity(
+                                  activeAmbulance.id,
+                                  item.id,
+                                  event.target.value,
+                                  item.requiredQty,
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="volunteer-modal__flag-row">
+                        {/* 🟢 CHECK MODE → show flag button */}
+                        {!isViewMode && (
+                          <button
+                            type="button"
+                            className="volunteer-modal__flag-button"
+                            onClick={() =>
+                              toggleFlag(activeAmbulance.id, item.id)
+                            }
+                          >
+                            Flag
+                          </button>
+                        )}
+
+                        {isViewMode && itemState?.savedNote && (
+                          <div className="volunteer-modal__saved-note">
+                            <div className="volunteer-modal__saved-note-text">
+                              {itemState.savedNote.text}
+                            </div>
+                            <div className="volunteer-modal__saved-note-meta">
+                              Placed by {itemState.savedNote.by} on{" "}
+                              {formatDateTime(itemState.savedNote.at)}
+                            </div>
+                          </div>
+                        )}
+
+                        {!isViewMode && itemState?.savedNote && (
+                          <div className="volunteer-modal__saved-note">
+                            <div className="volunteer-modal__saved-note-text">
+                              Saved note: {itemState.savedNote.text}
+                            </div>
+                            <div className="volunteer-modal__saved-note-meta">
+                              Placed by {itemState.savedNote.by} on{" "}
+                              {itemState.savedNote.at}
+                            </div>
+
+                            <button
+                              type="button"
+                              className="volunteer-modal__delete-note"
+                              onClick={() =>
+                                deleteFlagNote(activeAmbulance.id, item.id)
+                              }
+                            >
+                              Delete flag note
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {itemState?.isFlagOpen && !isViewMode ? (
+                        <div className="volunteer-modal__note-box">
+                          <textarea
+                            className="volunteer-modal__note-input"
+                            placeholder="Write your note here..."
+                            value={itemState?.noteDraft || ""}
+                            onChange={(event) =>
+                              updateNoteDraft(
+                                activeAmbulance.id,
+                                item.id,
+                                event.target.value,
+                              )
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="volunteer-modal__save-note"
+                            onClick={() =>
+                              saveFlagNote(activeAmbulance.id, item.id)
+                            }
+                          >
+                            Save
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="volunteer-modal__actions">
+                {!isViewMode && (
+                  <button
+                    type="button"
+                    className="volunteer-modal__button volunteer-modal__button--primary"
+                    onClick={handleCompleteCheck}
+                  >
+                    {isResolveMode ? "Resolve Check" : "Complete Check"}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="volunteer-modal__button volunteer-modal__button--secondary"
+                  onClick={closeModal}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
