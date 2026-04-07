@@ -67,6 +67,7 @@ def get_ambulances(request):
                 "missing_count": missing_count,
                 "templates": [
                     {
+                        "id": t.id,
                         "item": t.item.id,
                         "item_name": t.item.name,
                         "required_quantity": t.required_quantity,

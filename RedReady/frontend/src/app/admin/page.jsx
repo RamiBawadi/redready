@@ -722,7 +722,9 @@ function AdminPage() {
                         >{`Today (${todayISO()})`}</option>
                       ) : (
                         historyDates.map((d) => (
-                          <option value={d}>{formatDateOption(d)}</option>
+                          <option key={d} value={d}>
+                            {formatDateOption(d)}
+                          </option>
                         ))
                       )}
                     </select>
@@ -741,8 +743,8 @@ function AdminPage() {
                           {historyForSelectedDate.Day.length === 0 ? (
                             <div className="history-empty">No checks</div>
                           ) : (
-                            historyForSelectedDate.Day.map((h, idx) => (
-                              <div className="history-row" key={`d-${idx}`}>
+                            historyForSelectedDate.Day.map((h) => (
+                              <div className="history-row" key={h.id}>
                                 <div className="history-by">
                                   {h.user_full_name}
                                 </div>
@@ -759,8 +761,8 @@ function AdminPage() {
                           {historyForSelectedDate.Night.length === 0 ? (
                             <div className="history-empty">No checks</div>
                           ) : (
-                            historyForSelectedDate.Night.map((h, idx) => (
-                              <div className="history-row" key={`n-${idx}`}>
+                            historyForSelectedDate.Night.map((h) => (
+                              <div className="history-row" key={h.id}>
                                 <div className="history-by">
                                   {h.user_full_name}
                                 </div>
