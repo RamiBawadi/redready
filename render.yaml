@@ -3,7 +3,7 @@ services:
     name: redready-api
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python RedReady/manage.py collectstatic --noinput && python RedReady/manage.py migrate
+    buildCommand: pip install -r requirements.txt && python RedReady/manage.py collectstatic --noinput && python RedReady/manage.py migrate && python RedReady/manage.py bootstrap_admin
     startCommand: gunicorn config.wsgi:application --chdir RedReady
     envVars:
       - key: DEBUG
@@ -17,4 +17,12 @@ services:
       - key: CSRF_TRUSTED_ORIGINS
         sync: false
       - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_FIRST_NAME
+        sync: false
+      - key: ADMIN_LAST_NAME
         sync: false
