@@ -1,4 +1,4 @@
 REM === Start Django Backend ===
-.venv\Scripts\activate && ^
+venv\Scripts\activate && ^
 cd RedReady && ^
 python manage.py runserver

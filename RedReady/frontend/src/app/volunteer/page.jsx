@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import "./Volunteer.css";
+import { apiUrl } from "@/lib/api";
 
 const STATUS_META = {
   Ready: { className: "ready", buttonLabel: "View Check", disabled: false },
@@ -81,7 +82,7 @@ function VolunteerPage() {
 
     if (!token) return;
 
-    fetch("http://127.0.0.1:8000/api/me/", {
+    fetch(apiUrl("/api/me/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -100,7 +101,7 @@ function VolunteerPage() {
   useEffect(() => {
     const token = localStorage.getItem("access");
 
-    fetch("http://127.0.0.1:8000/api/ambulances/", {
+    fetch(apiUrl("/api/ambulances/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -348,7 +349,7 @@ function VolunteerPage() {
       };
     });
 
-    fetch("http://127.0.0.1:8000/api/checks/", {
+    fetch(apiUrl("/api/checks/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: redready-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python RedReady/manage.py collectstatic --noinput && python RedReady/manage.py migrate
+    startCommand: gunicorn config.wsgi:application --chdir RedReady
+    envVars:
+      - key: DEBUG
+        value: False
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false

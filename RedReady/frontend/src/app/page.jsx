@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./RoleSelect.css";
+import { apiUrl } from "@/lib/api";
 
 import AuthGuard from "@/components/AuthGuard";
 export default function HomeWrapper() {
@@ -25,7 +26,7 @@ function Home() {
       return;
     }
 
-    fetch("http://127.0.0.1:8000/api/me/", {
+    fetch(apiUrl("/api/me/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },

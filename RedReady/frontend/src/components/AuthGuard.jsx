@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import "./AuthGuard.css";
+import { apiUrl } from "@/lib/api";
 
 export default function AuthGuard({ children }) {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function AuthGuard({ children }) {
     }
 
     //  Verify token
-    fetch("http://127.0.0.1:8000/api/me/", {
+    fetch(apiUrl("/api/me/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },

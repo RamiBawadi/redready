@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./Login.css";
+import { apiUrl } from "@/lib/api";
 
 export default function LoginPage() {
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/login/", {
+      const res = await fetch(apiUrl("/api/login/"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

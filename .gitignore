@@ -3,3 +3,7 @@ __pycache__/
 venv/
 node_modules/
 .next/
+staticfiles/
+RedReady/staticfiles/
+.env
+.env.local

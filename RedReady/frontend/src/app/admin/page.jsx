@@ -13,6 +13,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import "./Admin.css";
+import { apiUrl } from "@/lib/api";
 let router;
 const role = "Admin"; // Temp
 
@@ -78,7 +79,7 @@ function AdminPage() {
   useEffect(() => {
     const token = localStorage.getItem("access");
 
-    fetch("http://127.0.0.1:8000/api/ambulances/", {
+    fetch(apiUrl("/api/ambulances/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -105,7 +106,7 @@ function AdminPage() {
       return;
     }
 
-    fetch("http://127.0.0.1:8000/api/me/", {
+    fetch(apiUrl("/api/me/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -192,7 +193,7 @@ function AdminPage() {
 
     const token = localStorage.getItem("access");
 
-    fetch(`http://127.0.0.1:8000/api/checks/${selected.id}/`, {
+    fetch(apiUrl(`/api/checks/${selected.id}/`), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -205,7 +206,7 @@ function AdminPage() {
   useEffect(() => {
     const token = localStorage.getItem("access");
 
-    fetch("http://127.0.0.1:8000/api/items/", {
+    fetch(apiUrl("/api/items/"), {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -254,7 +255,7 @@ function AdminPage() {
 
     const token = localStorage.getItem("access");
 
-    const res = await fetch("http://127.0.0.1:8000/api/ambulances/", {
+    const res = await fetch(apiUrl("/api/ambulances/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -290,7 +291,7 @@ function AdminPage() {
   async function removeItem(templateId) {
     const token = localStorage.getItem("access");
 
-    await fetch(`http://127.0.0.1:8000/api/templates/${templateId}/`, {
+    await fetch(apiUrl(`/api/templates/${templateId}/`), {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -314,7 +315,7 @@ function AdminPage() {
 
     const token = localStorage.getItem("access");
 
-    const res = await fetch("http://127.0.0.1:8000/api/templates/", {
+    const res = await fetch(apiUrl("/api/templates/"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -344,7 +345,7 @@ function AdminPage() {
   async function commitEditRequired(templateId) {
     const token = localStorage.getItem("access");
 
-    await fetch(`/api/templates/${templateId}/`, {
+    await fetch(apiUrl(`/api/templates/${templateId}/`), {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
