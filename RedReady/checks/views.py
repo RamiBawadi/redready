@@ -39,7 +39,7 @@ def create_check(request):
             available_quantity=item_data.get("available_quantity", 0),
             is_flagged=item_data.get("is_flagged", False),
             note=item_data.get("note", ""),
-            is_checked=True
+            is_checked=item_data.get("is_checked", False)
         )
 
     return Response({"message": "Check saved"})

@@ -15,7 +15,8 @@ class AmbulanceCheck(models.Model):
 
     shift = models.CharField(max_length=10, choices=SHIFT_CHOICES)
 
-    date = models.DateField(auto_now_add=True)
+    # Stored explicitly so night-shift checks can be saved against the shift date.
+    date = models.DateField()
     time = models.TimeField(auto_now_add=True)
 
     def __str__(self):
