@@ -49,12 +49,16 @@ def create_check(request):
 def get_checks(request, ambulance_id):
     checks = AmbulanceCheck.objects.filter(
         ambulance_id=ambulance_id
-    ).prefetch_related("items__item")
+    ).prefetch_related(
+        "items__item",
+        "ambulance__templates"  # ✅ prefetch templates too
+    ).select_related(
+        "ambulance",             # ✅ fetch ambulance in same query
+        "user"
+    )
 
     serializer = AmbulanceCheckSerializer(checks, many=True)
     return Response(serializer.data)
-
-
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
