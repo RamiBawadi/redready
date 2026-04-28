@@ -4,12 +4,12 @@ from rest_framework.response import Response
 from .models import Ambulance, AmbulanceItemTemplate
 from .serializers import AmbulanceSerializer
 from items.models import Item
+from checks.models import AmbulanceCheck
 
 from datetime import date
 from checks.utils import get_shift, calculate_status
 
 
-# ✅ Default items every new ambulance gets
 DEFAULT_ITEMS = [
     {"name": "AED",    "required_quantity": 1},
     {"name": "O2",     "required_quantity": 4},
@@ -25,30 +25,32 @@ DEFAULT_ITEMS = [
 def get_ambulances(request):
 
     if request.method == "GET":
-        ambulances = Ambulance.objects.prefetch_related(
-            "templates__item",
-            "checks__items__item",
-            "checks__user",
-        ).all()
+        ambulances = Ambulance.objects.prefetch_related("templates__item").all()
 
         shift, shift_date = get_shift()
+
+        all_checks = (
+            AmbulanceCheck.objects
+            .filter(shift=shift, date=shift_date)
+            .prefetch_related("items__item", "items__connected_check__ambulance__templates")
+            .select_related("user", "ambulance")
+            .order_by("-time")
+        )
+
+        latest_check_by_ambulance = {}
+        for check in all_checks:
+            if check.ambulance_id not in latest_check_by_ambulance:
+                latest_check_by_ambulance[check.ambulance_id] = check
 
         data = []
 
         for amb in ambulances:
-            # ✅ Build templates dict once per ambulance
             templates = {
                 t.item_id: t.required_quantity
                 for t in amb.templates.all()
             }
 
-            last_check = (
-                amb.checks
-                .filter(shift=shift, date=shift_date)
-                .order_by("-time")
-                .first()
-            )
-
+            last_check = latest_check_by_ambulance.get(amb.id)
             last_check_data = None
             missing_count = 0
 
@@ -64,7 +66,6 @@ def get_ambulances(request):
                             "item": item.item.name,
                             "item_id": item.item.id,
                             "quantity": item.available_quantity,
-                            # ✅ dict lookup instead of DB query
                             "required": templates.get(item.item_id, 0),
                             "flagged": item.is_flagged,
                             "note": item.note,
@@ -112,7 +113,6 @@ def get_ambulances(request):
 
         amb = Ambulance.objects.create(code=code)
 
-        # ✅ Auto-assign default items to every new ambulance
         for default in DEFAULT_ITEMS:
             item, _ = Item.objects.get_or_create(name=default["name"])
             AmbulanceItemTemplate.objects.create(
