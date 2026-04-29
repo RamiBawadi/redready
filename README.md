@@ -95,13 +95,21 @@ RedReady is designed to grow, improve, and adapt as the project develops.
 
 <div align="center">
 
-### Homepage
+### Login Page
 
-![Homepage Screenshot](screenshots/homepage.png)
+![Admin Dashboard Screenshot](docs/screenshots/login.png)
 
 ### Admin Dashboard
 
-![Admin Dashboard Screenshot](screenshots/admin.png)
+![Admin Dashboard Screenshot](docs/screenshots/admin.png)
+
+### Volunteer Dashboard
+
+![Admin Dashboard Screenshot](docs/screenshots/volunteer.png)
+
+### Logistics Dashboard
+
+![Admin Dashboard Screenshot](docs/screenshots/logistics.png)
 
 </div>
 
@@ -127,7 +135,7 @@ RedReady is designed to grow, improve, and adapt as the project develops.
 | Name | Role |
 |---|---|
 | Mohammad Kassira | Frontend Team |
-| Hasan Dokmak | Frontend Team |
+| Hasan Dokmak | Frontend/Deployment Team |
 | Rami Bawadi | Backend Team |
 | Assil Kachmar | Backend Team |
 | Adam Khatib | Backend Team |
