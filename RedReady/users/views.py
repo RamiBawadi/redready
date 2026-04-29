@@ -23,7 +23,6 @@ def me(request):
         "roles": roles
     })
 
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_user(request):
@@ -33,6 +32,8 @@ def create_user(request):
     email = request.data.get("email")
     password = request.data.get("password")
     role = request.data.get("role", "volunteer")
+    first_name = request.data.get("first_name", "")
+    last_name = request.data.get("last_name", "")
 
     if not email or not password:
         return Response({"error": "Missing fields"}, status=400)
@@ -44,11 +45,15 @@ def create_user(request):
         email=email,
         password=password,
         role=role,
+        first_name=first_name,
+        last_name=last_name,
     )
 
     return Response({
         "email": user.email,
         "role": user.role,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
     })
 
 @api_view(["GET"])
