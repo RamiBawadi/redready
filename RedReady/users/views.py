@@ -64,6 +64,8 @@ def list_users(request):
             "id": u.id,
             "email": u.email,
             "role": u.role,
+            "first_name": u.first_name,
+            "last_name": u.last_name,
         }
         for u in users
     ])
